@@ -5,10 +5,10 @@ import (
 )
 
 type Lexer struct {
-	input string
-	position int // current position in input (points to the current char in the input)
-	readPosition int // current reading's position in input (after current char)
-	ch byte // current char under examination
+	input        string
+	position     int  // current position in input (points to the current char in the input)
+	readPosition int  // current reading's position in input (after current char)
+	ch           byte // current char under examination
 }
 
 func New(input string) *Lexer {
@@ -35,18 +35,30 @@ func (l *Lexer) NextToken() token.Token {
 	l.skipWhiteSpace()
 
 	switch l.ch {
+	case '+':
+		tok = newToken(token.PLUS, l.ch)
+	case '-':
+		tok = newToken(token.MINUS, l.ch)
+	case '!':
+		tok = l.makeTwoCharToken('=', token.NOT_EQ, token.BANG)
+	case '/':
+		tok = newToken(token.SLASH, l.ch)
+	case '*':
+		tok = newToken(token.ASTERISK, l.ch)
+	case '<':
+		tok = newToken(token.LT, l.ch)
+	case '>':
+		tok = newToken(token.GT, l.ch)
 	case '=':
-		tok = newToken(token.ASSIGN, l.ch)
+		tok = l.makeTwoCharToken('=', token.EQ, token.ASSIGN)
+	case ',':
+		tok = newToken(token.COMMA, l.ch)
 	case ';':
 		tok = newToken(token.SEMICOLON, l.ch)
 	case '(':
 		tok = newToken(token.LPAREN, l.ch)
 	case ')':
 		tok = newToken(token.RPAREN, l.ch)
-	case ',':
-		tok = newToken(token.COMMA, l.ch)
-	case '+':
-		tok = newToken(token.PLUS, l.ch)
 	case '{':
 		tok = newToken(token.LBRACE, l.ch)
 	case '}':
@@ -56,7 +68,19 @@ func (l *Lexer) NextToken() token.Token {
 		tok.Type = token.EOF
 	default:
 		if isLetter(l.ch) {
-			tok.Literal = l.readIdentifiersAndNumbers(isLetter)
+			literal := l.readIdentifiersAndNumbers(isLetter)
+
+			if literal == "else" && l.peekChar() == 'i' {
+				l.readChar()
+				nextLiteral := l.readIdentifiersAndNumbers(isLetter)
+
+				tok.Literal = literal + nextLiteral
+				tok.Type = token.LookupIndentifier(tok.Literal)
+
+				return tok
+			}
+
+			tok.Literal = literal
 			tok.Type = token.LookupIndentifier(tok.Literal)
 
 			return tok
@@ -76,20 +100,38 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
-func(l *Lexer) readIdentifiersAndNumbers(fn func(ch byte) bool) string {
+func (l *Lexer) readIdentifiersAndNumbers(fn func(ch byte) bool) string {
 	position := l.position
 
 	for fn(l.ch) {
 		l.readChar()
 	}
 
-	return l.input[position: l.position]
+	return l.input[position:l.position]
 }
 
 func (l *Lexer) skipWhiteSpace() {
 	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
 		l.readChar()
 	}
+}
+
+func (l *Lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	}
+
+	return l.input[l.readPosition]
+}
+
+func (l *Lexer) makeTwoCharToken(char byte, twoCharType token.TokenType, defaultType token.TokenType) token.Token {
+	if l.peekChar() == char {
+		ch := l.ch
+		l.readChar()
+		return token.Token{Type: twoCharType, Literal: string(ch) + string(l.ch)}
+	}
+
+	return newToken(defaultType, l.ch)
 }
 
 func newToken(tokenType token.TokenType, ch byte) token.Token {
@@ -103,4 +145,3 @@ func isLetter(ch byte) bool {
 func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
 }
-
