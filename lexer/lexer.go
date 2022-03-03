@@ -4,13 +4,16 @@ import (
 	"github.com/mycok/monkey_interpreter/token"
 )
 
+// Lexer represents a Lexer object / type.
 type Lexer struct {
 	input        string
 	position     int  // current position in input (points to the current char / position of that char in the input)
 	readPosition int  // current reading's position in input (after current char)
-	char           byte // current char under examination
+	char         byte // current char under examination
 }
 
+
+// New returns an initialized instance of a Lexer.
 func New(input string) *Lexer {
 	l := &Lexer{input: input}
 	// Set all the remaining lexer fields by calling l.readChar.
@@ -31,6 +34,7 @@ func (l *Lexer) readChar() {
 	l.readPosition += 1
 }
 
+// NewToken returns the current token based on the value of l.char.
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
