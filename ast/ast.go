@@ -4,7 +4,7 @@ import (
 	"github.com/mycok/monkey_interpreter/token"
 )
 
-// Node interface is implemented by node types. 
+// Node interface is implemented by node types.
 type Node interface {
 	TokenLiteral() string
 }
@@ -38,13 +38,13 @@ func (p *Program) TokenLiteral() string {
 // LetStatement type represents an entire let statement in a program including the expression part.
 type LetStatement struct {
 	Token token.Token
-	Name *Identifier
+	Name  *Identifier
 	Value Expression
 }
 
 // TokenLiteral returns a string literal value of the token.
 func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
-func (ls *LetStatement) statementNode() {}
+func (ls *LetStatement) statementNode()       {}
 
 // Identifier type represents identifier expressions in a program.
 type Identifier struct {
@@ -54,5 +54,4 @@ type Identifier struct {
 
 // TokenLiteral returns a string literal value of the token.
 func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
-func (i *Identifier) expressionNode() {}
-
+func (i *Identifier) expressionNode()      {}
