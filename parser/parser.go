@@ -8,16 +8,18 @@ import (
 	"github.com/mycok/monkey_interpreter/token"
 )
 
+// Parser represents a Parser object / type.
 type Parser struct {
 	l         *lexer.Lexer
 	currToken token.Token
 	peekToken token.Token
-	errors []string
+	errors    []string
 }
 
+// New returns an initialized instance of a Parser.
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
-		l: l,
+		l:      l,
 		errors: []string{},
 	}
 
@@ -28,6 +30,7 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
+// Errors returns p.errors slice of string errors.
 func (p *Parser) Errors() []string {
 	return p.errors
 }
@@ -42,11 +45,13 @@ func (p *Parser) nextToken() {
 	p.peekToken = p.l.NextToken()
 }
 
+// ParseProgram return an instance of *ast.Program as the root node with all the
+// parsed statements as child nodes.
 func (p *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{}
 	program.Statements = []ast.Statement{}
 
-	for p.currToken.Type != token.EOF {
+	for !p.curTokenIs(token.EOF) {
 		stmt := p.parseStatement()
 		if stmt != nil {
 			program.Statements = append(program.Statements, stmt)
@@ -62,9 +67,26 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.currToken.Type {
 	case token.LET:
 		return p.parseLetStatement()
+	case token.RETURN:
+		return p.parseReturnStatement()
 	default:
 		return nil
 	}
+}
+
+func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
+	// Create a Statement instance with the current p.currToken which in this case
+	// should be a token of LET type.
+	stmt := &ast.ReturnStatement{Token: p.currToken}
+	p.nextToken()
+
+	// TODO: Add expression parsing functionality.
+
+	for !p.curTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
@@ -84,6 +106,8 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	if !p.peekExpectedType(token.ASSIGN) {
 		return nil
 	}
+
+	// TODO: Add expression parsing functionality.
 
 	for !p.curTokenIs(token.SEMICOLON) {
 		p.nextToken()

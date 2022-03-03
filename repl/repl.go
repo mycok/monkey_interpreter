@@ -11,6 +11,8 @@ import (
 
 const PROMPT = ":: "
 
+// Start displays a user prompt message and initializes a scanner object to read user
+// input from the stdOut.
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 

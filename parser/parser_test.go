@@ -18,9 +18,7 @@ func TestParseLetStatements(t *testing.T) {
 	p := New(l)
 
 	program := p.ParseProgram()
-	if program == nil {
-		t.Fatalf("ParseProgram() returned nil")
-	}
+	checkParserErrors(t, p)
 
 	if len(program.Statements) != 3 {
 		t.Fatalf("program.Statements expected to contain 3 statements. but got %d", len(program.Statements))
@@ -43,25 +41,33 @@ func TestParseLetStatements(t *testing.T) {
 	}
 }
 
-func TestParseLetStatementsErrors(t *testing.T) {
+func TestParseReturnStatements(t *testing.T) {
 	input := `
-	let 67;
-	let me 87;
-	let = 4;
-	let z == 10;
+	return 5;
+	return 15;
+	return add(5, 2);
 	`
-
 	l := lexer.New(input)
 	p := New(l)
 
 	program := p.ParseProgram()
-	if program == nil {
-		t.Fatalf("ParseProgram() returned nil")
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 3 {
+		t.Fatalf("program.Statements expected to contain 3 statements. but got %d", len(program.Statements))
 	}
 
-	// Checks for parse errors and stops the test execution by marking the entire test
-	// function as Failed. This stops execution at this point in the function.
-	checkParserErrors(t, p)
+	for _, stmt := range program.Statements {
+		returnStmt, ok := stmt.(*ast.ReturnStatement)
+		if !ok {
+			t.Errorf("stmt is not of a valid *ast.ReturnStatement type. got:%T", stmt)
+			continue
+		}
+
+		if returnStmt.TokenLiteral() != "return" {
+			t.Errorf("returnStmt.TokenLiteral is not 'return', got:%T", returnStmt.TokenLiteral())
+		}
+	}
 }
 
 func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
@@ -79,13 +85,13 @@ func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
 	}
 
 	if letSmt.Name.Value != name {
-		t.Errorf("letSmt.Name.Value not '%s'. got:%s", name, letSmt.Name.Value)
+		t.Errorf("letSmt.Name.Value is not '%s'. got:%s", name, letSmt.Name.Value)
 
 		return false
 	}
 
 	if letSmt.Name.TokenLiteral() != name {
-		t.Errorf("s.Name not '%s'. got:%s", name, letSmt.Name.Value)
+		t.Errorf("s.Name is not '%s'. got:%s", name, letSmt.Name.Value)
 
 		return false
 	}
