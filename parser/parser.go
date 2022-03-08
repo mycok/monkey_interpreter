@@ -8,12 +8,30 @@ import (
 	"github.com/mycok/monkey_interpreter/token"
 )
 
+const (
+	_           int = iota
+	LOWEST          // Lowest rank after _
+	EQUALS          // ==
+	LESSGREATER     // > OR <
+	SUM             // +
+	PRODUCT         // *
+	PREFIX          // -X OR !X
+	CALL            // fn() OR myFunction(x)
+)
+
+type (
+	prefixParseFn func() ast.Expression
+	infixParseFn  func(ast.Expression) ast.Expression
+)
+
 // Parser represents a Parser object / type.
 type Parser struct {
-	l         *lexer.Lexer
-	currToken token.Token
-	peekToken token.Token
-	errors    []string
+	l              *lexer.Lexer
+	currToken      token.Token
+	peekToken      token.Token
+	errors         []string
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFns  map[token.TokenType]infixParseFn
 }
 
 // New returns an initialized instance of a Parser.
@@ -23,11 +41,22 @@ func New(l *lexer.Lexer) *Parser {
 		errors: []string{},
 	}
 
+	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
+
 	// Read two tokens so that both currToken & peekToken are set.
 	p.nextToken()
 	p.nextToken()
 
 	return p
+}
+
+func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tokenType] = fn
+}
+
+func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
+	p.infixParseFns[tokenType] = fn
 }
 
 // Errors returns p.errors slice of string errors.
@@ -70,8 +99,34 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
+		return p.parseExpressionStatement()
+	}
+}
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	fn := p.prefixParseFns[p.currToken.Type]
+	if fn == nil {
 		return nil
 	}
+
+	leftExp := fn()
+
+	return leftExp
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
+}
+
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.currToken}
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
 }
 
 func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
@@ -129,8 +184,8 @@ func (p *Parser) peekExpectedType(t token.TokenType) bool {
 		p.nextToken()
 
 		return true
-	} else {
-		p.peekError(t)
-		return false
 	}
+
+	p.peekError(t)
+	return false
 }

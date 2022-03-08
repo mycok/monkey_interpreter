@@ -9,7 +9,7 @@ import (
 	"github.com/mycok/monkey_interpreter/token"
 )
 
-const PROMPT = ":: "
+const prompt = ":: "
 
 // Start displays a user prompt message and initializes a scanner object to read user
 // input from the stdOut.
@@ -17,7 +17,7 @@ func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 
 	for {
-		fmt.Printf(PROMPT)
+		fmt.Printf(prompt)
 		scanned := scanner.Scan()
 
 		if !scanned {
