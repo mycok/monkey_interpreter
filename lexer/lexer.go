@@ -12,7 +12,6 @@ type Lexer struct {
 	char         byte // current char under examination
 }
 
-
 // New returns an initialized instance of a Lexer.
 func New(input string) *Lexer {
 	l := &Lexer{input: input}
@@ -31,10 +30,10 @@ func (l *Lexer) readChar() {
 	}
 
 	l.position = l.readPosition
-	l.readPosition += 1
+	l.readPosition++
 }
 
-// NewToken returns the current token based on the value of l.char.
+// NextToken returns the current token based on the value of l.char.
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -46,7 +45,7 @@ func (l *Lexer) NextToken() token.Token {
 	case '-':
 		tok = newToken(token.MINUS, l.char)
 	case '!':
-		tok = l.makeTwoCharToken('=', token.NOT_EQ, token.BANG)
+		tok = l.makeTwoCharToken('=', token.NOTEQ, token.BANG)
 	case '/':
 		tok = newToken(token.SLASH, l.char)
 	case '*':

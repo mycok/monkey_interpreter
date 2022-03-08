@@ -18,7 +18,7 @@ const (
 	LT       = "<"
 	GT       = ">"
 	EQ       = "=="
-	NOT_EQ   = "!="
+	NOTEQ    = "!="
 
 	// Delimiters
 	COMMA     = ","
@@ -34,7 +34,7 @@ const (
 	LET      = "LET"
 	IF       = "IF"
 	ELSE     = "ELSE"
-	ELSE_IF  = "ELSE IF"
+	ELSEIF   = "ELSE IF"
 	RETURN   = "RETURN"
 	TRUE     = "TRUE"
 	FALSE    = "FALSE"
@@ -45,19 +45,23 @@ var keywords = map[string]TokenType{
 	"let":    LET,
 	"if":     IF,
 	"else":   ELSE,
-	"elseif": ELSE_IF,
+	"elseif": ELSEIF,
 	"return": RETURN,
 	"true":   TRUE,
 	"false":  FALSE,
 }
 
+// TokenType represents the type of a token.
 type TokenType string
 
+// Token represents an type created by a lexer type.
 type Token struct {
 	Type    TokenType
 	Literal string
 }
 
+// LookupIndentifier performs a map lookup based on the provided identifier string and
+// returns the matching type constant.
 func LookupIndentifier(ident string) TokenType {
 	if tokenType, ok := keywords[ident]; ok {
 		return tokenType
