@@ -79,20 +79,6 @@ func (ls *LetStatement) String() string {
 
 func (ls *LetStatement) statementNode() {}
 
-// Identifier represents identifier expressions in a program.
-type Identifier struct {
-	Token token.Token
-	Value string
-}
-
-// TokenLiteral returns a string literal value of the token.
-func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
-
-// String returns the Identifier.Value.
-func (i *Identifier) String() string { return i.Value }
-
-func (i *Identifier) expressionNode() {}
-
 // ReturnStatement represents a return statement in a program including the expression part.
 type ReturnStatement struct {
 	Token       token.Token
@@ -138,3 +124,31 @@ func (es *ExpressionStatement) String() string {
 }
 
 func (es *ExpressionStatement) statementNode() {}
+
+// Identifier represents identifier expressions in a program. ie ("foobar;").
+type Identifier struct {
+	Token token.Token
+	Value string
+}
+
+// TokenLiteral returns a string literal value of the token.
+func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
+
+// String returns the Identifier.Value.
+func (i *Identifier) String() string { return i.Value }
+
+func (i *Identifier) expressionNode() {}
+
+// IntegerLiteral represents a single int literal token. ie (5; or "5;").
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64
+}
+
+// TokenLiteral returns a string literal value of the token.
+func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
+
+// String returns a string literal value of the token.
+func (il *IntegerLiteral) String() string { return il.Token.Literal }
+
+func (il *IntegerLiteral) expressionNode() {}

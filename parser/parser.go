@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/mycok/monkey_interpreter/ast"
 	"github.com/mycok/monkey_interpreter/lexer"
@@ -43,6 +44,7 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
+	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 
 	// Read two tokens so that both currToken & peekToken are set.
 	p.nextToken()
@@ -103,47 +105,6 @@ func (p *Parser) parseStatement() ast.Statement {
 	}
 }
 
-func (p *Parser) parseExpression(precedence int) ast.Expression {
-	fn := p.prefixParseFns[p.currToken.Type]
-	if fn == nil {
-		return nil
-	}
-
-	leftExp := fn()
-
-	return leftExp
-}
-
-func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
-}
-
-func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
-	stmt := &ast.ExpressionStatement{Token: p.currToken}
-	stmt.Expression = p.parseExpression(LOWEST)
-
-	if p.peekTokenIs(token.SEMICOLON) {
-		p.nextToken()
-	}
-
-	return stmt
-}
-
-func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
-	// Create a Statement instance with the current p.currToken which in this case
-	// should be a token of LET type.
-	stmt := &ast.ReturnStatement{Token: p.currToken}
-	p.nextToken()
-
-	// TODO: Add expression parsing functionality.
-
-	for !p.curTokenIs(token.SEMICOLON) {
-		p.nextToken()
-	}
-
-	return stmt
-}
-
 func (p *Parser) parseLetStatement() *ast.LetStatement {
 	// Create a Statement instance with the current p.currToken which in this case
 	// should be a token of LET type.
@@ -170,6 +131,64 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	return stmt
 }
+
+func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
+	// Create a Statement instance with the current p.currToken which in this case
+	// should be a token of LET type.
+	stmt := &ast.ReturnStatement{Token: p.currToken}
+	p.nextToken()
+
+	// TODO: Add expression parsing functionality.
+
+	for !p.curTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.currToken}
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	fn := p.prefixParseFns[p.currToken.Type]
+	if fn == nil {
+		return nil
+	}
+
+	leftExp := fn()
+
+	return leftExp
+}
+
+// Start*****token type parse methods*****
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
+}
+
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	lit := &ast.IntegerLiteral{Token: p.currToken}
+
+	value, err := strconv.ParseInt(p.currToken.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q as integer", p.currToken.Literal)
+		p.errors = append(p.errors, msg)
+	}
+
+	lit.Value = value
+
+	return lit
+}
+
+// End*****token type parse methods*****
 
 func (p *Parser) curTokenIs(t token.TokenType) bool {
 	return p.currToken.Type == t
