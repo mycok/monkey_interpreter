@@ -16,7 +16,7 @@ const (
 	LESSGREATER     // > OR <
 	SUM             // +
 	PRODUCT         // *
-	PREFIX          // -X OR !X
+	PREFIX          // -X OR !X OR +X
 	CALL            // fn() OR myFunction(x)
 )
 
@@ -45,6 +45,9 @@ func New(l *lexer.Lexer) *Parser {
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
+	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+	p.registerPrefix(token.BANG, p.parsePrefixExpression)
+	p.registerPrefix(token.PLUS, p.parsePrefixExpression)
 
 	// Read two tokens so that both currToken & peekToken are set.
 	p.nextToken()
@@ -125,6 +128,8 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	// TODO: Add expression parsing functionality.
 
+	// Loop through the expression until a semicolon token is reached which in this
+	// case means the end of the statement.
 	for !p.curTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
@@ -140,6 +145,8 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 
 	// TODO: Add expression parsing functionality.
 
+	// Loop through the expression until a semicolon token is reached which in this
+	// case means the end of the statement.
 	for !p.curTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
@@ -159,14 +166,17 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 }
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
-	fn := p.prefixParseFns[p.currToken.Type]
-	if fn == nil {
+	// Perform a parse function lookup from p.prefixParseFns map.
+	parseFn := p.prefixParseFns[p.currToken.Type]
+	if parseFn == nil {
+		p.noPrefixParseFnError(p.currToken.Type)
+
 		return nil
 	}
 
-	leftExp := fn()
+	expression := parseFn()
 
-	return leftExp
+	return expression
 }
 
 // Start*****token type parse methods*****
@@ -177,18 +187,36 @@ func (p *Parser) parseIdentifier() ast.Expression {
 func (p *Parser) parseIntegerLiteral() ast.Expression {
 	lit := &ast.IntegerLiteral{Token: p.currToken}
 
-	value, err := strconv.ParseInt(p.currToken.Literal, 0, 64)
+	intValue, err := strconv.ParseInt(p.currToken.Literal, 0, 64)
 	if err != nil {
 		msg := fmt.Sprintf("could not parse %q as integer", p.currToken.Literal)
 		p.errors = append(p.errors, msg)
 	}
 
-	lit.Value = value
+	lit.Value = intValue
 
 	return lit
 }
 
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	exp := &ast.PrefixExpression{
+		Token:    p.currToken,
+		Operator: p.currToken.Literal,
+	}
+
+	p.nextToken()
+
+	exp.Right = p.parseExpression(PREFIX)
+
+	return exp
+}
+
 // End*****token type parse methods*****
+
+func (p *Parser) noPrefixParseFnError(t token.TokenType) {
+	msg := fmt.Sprintf("no prefix parse function for %s found", t)
+	p.errors = append(p.errors, msg)
+}
 
 func (p *Parser) curTokenIs(t token.TokenType) bool {
 	return p.currToken.Type == t

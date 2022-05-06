@@ -1,14 +1,19 @@
 package token
 
 const (
+	// ILLEGAL represents any character not understood by the language lexer.
 	ILLEGAL = "ILLEGAL"
+
+	// EOF represents end of file.
 	EOF     = "EOF"
 
-	// User defined identifiers + literals
-	IDENT = "IDENT" // add, foobar, x,y, ....etc
-	INT   = "INT"   // 1234567890
+	// IDENT such as add, foobar, x,y, ....etc
+	IDENT = "IDENT"
 
-	// Operators
+	// INT such as 1234567890
+	INT   = "INT"
+
+	// ASSIGN ... are some of the operators implemented in the language.
 	ASSIGN   = "="
 	PLUS     = "+"
 	MINUS    = "-"
@@ -20,7 +25,7 @@ const (
 	EQ       = "=="
 	NOTEQ    = "!="
 
-	// Delimiters
+	// COMMA ... are some of the delimiters implemented in the language.
 	COMMA     = ","
 	SEMICOLON = ";"
 
@@ -29,7 +34,7 @@ const (
 	LBRACE = "{"
 	RBRACE = "}"
 
-	// Keywords
+	// FUNCTION ... are some of the keywords implemented in the language.
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
 	IF       = "IF"

@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/mycok/monkey_interpreter/ast"
@@ -132,6 +133,71 @@ func TestParseIntegerLiteralExpressions(t *testing.T) {
 		t.Errorf("ident.TokenLiteral() not %s. got:%s", "foobar", literal.TokenLiteral())
 	}
 
+}
+
+func TestParsePrefixExpressions(t *testing.T) {
+	tests := []struct {
+		input        string
+		operator     string
+		integerValue int64
+	}{
+		{"!5;", "!", 5},
+		{"+23;", "+", 23},
+		{"-15;", "-", 15},
+	}
+
+	for _, tc := range tests {
+		l := lexer.New(tc.input)
+		p := New(l)
+
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements expected to contain 1 statements. but got %d", len(program.Statements))
+		}
+
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("program.Statements[0] is not a valid *ast.ExpressionStatement type. got:%T", program.Statements[0])
+		}
+
+		exp, ok := stmt.Expression.(*ast.PrefixExpression)
+		if !ok {
+			t.Fatalf("expression is not a valid *ast.PrefixExpression type. got:%T", stmt.Expression)
+		}
+
+		if exp.Operator != tc.operator {
+			t.Fatalf("exp.Operator is not '%s'. got:%s", tc.operator, exp.Operator)
+		}
+
+		if !testIntegerLiteral(t, exp.Right, tc.integerValue) {
+			return
+		}
+	}
+}
+
+func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) bool {
+	intV, ok := il.(*ast.IntegerLiteral)
+	if !ok {
+		t.Errorf("il is not *ast.IntegerLiteral. got:%T", il)
+
+		return false
+	}
+
+	if intV.Value != value {
+		t.Errorf("intV.Value is not %d. got:%d", value, intV.Value)
+
+		return false
+	}
+
+	if intV.TokenLiteral() != fmt.Sprintf("%d", value) {
+		t.Errorf("intV.TokenLiteral() is not %d. got:%s", value, intV.TokenLiteral())
+
+		return false
+	}
+
+	return true
 }
 
 func testLetStatement(t *testing.T, s ast.Statement, name string) bool {

@@ -152,3 +152,27 @@ func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *IntegerLiteral) String() string { return il.Token.Literal }
 
 func (il *IntegerLiteral) expressionNode() {}
+
+// PrefixExpression represents an expression such as (!4, +3, -19).
+type PrefixExpression struct {
+	Token    token.Token
+	Operator string
+	Right    Expression
+}
+
+// TokenLiteral returns a string literal value of the token.
+func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Literal }
+
+// String returns a string literal value of the token.
+func (pe *PrefixExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(pe.Operator)
+	out.WriteString(pe.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
+func (pe *PrefixExpression) expressionNode() {}
