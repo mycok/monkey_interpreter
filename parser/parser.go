@@ -10,15 +10,26 @@ import (
 )
 
 const (
-	_           int = iota
-	LOWEST          // Lowest rank after _
-	EQUALS          // ==
-	LESSGREATER     // > OR <
-	SUM             // +
-	PRODUCT         // *
-	PREFIX          // -X OR !X OR +X
-	CALL            // fn() OR myFunction(x)
+	_             int = iota
+	LOWEST            // Lowest rank after _
+	EQUALS            // ==
+	LESSORGREATER     // > OR <
+	SUM               // +
+	PRODUCT           // *
+	PREFIX            // -X OR !X OR +X
+	CALL              // fn() OR myFunction(x)
 )
+
+var precedences = map[token.TokenType]int{
+	token.EQ:       EQUALS,
+	token.NOTEQ:    EQUALS,
+	token.LT:       LESSORGREATER,
+	token.GT:       LESSORGREATER,
+	token.PLUS:     SUM,
+	token.MINUS:    SUM,
+	token.SLASH:    PRODUCT,
+	token.ASTERISK: PRODUCT,
+}
 
 type (
 	prefixParseFn func() ast.Expression
@@ -49,6 +60,16 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.PLUS, p.parsePrefixExpression)
 
+	p.infixParseFns = make(map[token.TokenType]infixParseFn)
+	p.registerInfix(token.PLUS, p.parseInfixExpression)
+	p.registerInfix(token.MINUS, p.parseInfixExpression)
+	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
+	p.registerInfix(token.SLASH, p.parseInfixExpression)
+	p.registerInfix(token.EQ, p.parseInfixExpression)
+	p.registerInfix(token.NOTEQ, p.parseInfixExpression)
+	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.LT, p.parseInfixExpression)
+
 	// Read two tokens so that both currToken & peekToken are set.
 	p.nextToken()
 	p.nextToken()
@@ -67,11 +88,6 @@ func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 // Errors returns p.errors slice of string errors.
 func (p *Parser) Errors() []string {
 	return p.errors
-}
-
-func (p *Parser) peekError(t token.TokenType) {
-	msg := fmt.Sprintf("expected next token to be %s, got %s instead", t, p.peekToken.Type)
-	p.errors = append(p.errors, msg)
 }
 
 func (p *Parser) nextToken() {
@@ -159,6 +175,9 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	stmt.Expression = p.parseExpression(LOWEST)
 
 	if p.peekTokenIs(token.SEMICOLON) {
+		// Calling p.nextToken at this point returns a semicolon token. This means that
+		// when the ParseProgram loop calls p.nextToken after this, "" / EOF token type which represents
+		// EOF or end of file will be returned as p.currToken. This EOF token will cause the ParseProgram method loop to terminate.
 		p.nextToken()
 	}
 
@@ -175,6 +194,19 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 
 	expression := parseFn()
+
+	// Check if the next token is not a semicolon and also if the next token precedence
+	// is higher than the precedence argument.
+	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+		parseFn := p.infixParseFns[p.peekToken.Type]
+		if parseFn == nil {
+			return expression
+		}
+
+		p.nextToken()
+
+		expression = parseFn(expression)
+	}
 
 	return expression
 }
@@ -211,6 +243,22 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 	return exp
 }
 
+func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	exp := &ast.InfixExpression{
+		Token:    p.currToken, // p.currToken is the operator of the infix expression.
+		Left:     left,
+		Operator: p.currToken.Literal,
+	}
+
+	precedence := p.curPrecedence()
+
+	p.nextToken()
+
+	exp.Right = p.parseExpression(precedence)
+
+	return exp
+}
+
 // End*****token type parse methods*****
 
 func (p *Parser) noPrefixParseFnError(t token.TokenType) {
@@ -235,4 +283,25 @@ func (p *Parser) peekExpectedType(t token.TokenType) bool {
 
 	p.peekError(t)
 	return false
+}
+
+func (p *Parser) peekError(t token.TokenType) {
+	msg := fmt.Sprintf("expected next token to be %s, got: %s instead", t, p.peekToken.Type)
+	p.errors = append(p.errors, msg)
+}
+
+func (p *Parser) peekPrecedence() int {
+	if p, ok := precedences[p.peekToken.Type]; ok {
+		return p
+	}
+
+	return LOWEST
+}
+
+func (p *Parser) curPrecedence() int {
+	if p, ok := precedences[p.currToken.Type]; ok {
+		return p
+	}
+
+	return LOWEST
 }

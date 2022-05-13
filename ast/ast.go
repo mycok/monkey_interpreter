@@ -30,7 +30,7 @@ type Program struct {
 	Statements []Statement
 }
 
-// TokenLiteral returns a string literal value of the statement.
+// TokenLiteral returns a token literal value of the token.
 func (p *Program) TokenLiteral() string {
 	if len(p.Statements) > 0 {
 		return p.Statements[0].TokenLiteral()
@@ -57,7 +57,7 @@ type LetStatement struct {
 	Value Expression
 }
 
-// TokenLiteral returns a string literal value of the token.
+// TokenLiteral returns a token literal value of the token.
 func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
 
 // String returns the string representation of the LetStatement type.
@@ -85,7 +85,7 @@ type ReturnStatement struct {
 	ReturnValue Expression
 }
 
-// TokenLiteral returns a string literal value of the token.
+// TokenLiteral returns a token literal value of the token.
 func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Literal }
 
 // String returns the string representation of the ReturnStatement type.
@@ -111,7 +111,7 @@ type ExpressionStatement struct {
 	Expression Expression
 }
 
-// TokenLiteral returns a string literal value of the token.
+// TokenLiteral returns a token literal value of the token.
 func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }
 
 // String returns the string representation of the ExpressionStatement type.
@@ -131,7 +131,7 @@ type Identifier struct {
 	Value string
 }
 
-// TokenLiteral returns a string literal value of the token.
+// TokenLiteral returns a token literal value of the token.
 func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
 
 // String returns the Identifier.Value.
@@ -145,10 +145,10 @@ type IntegerLiteral struct {
 	Value int64
 }
 
-// TokenLiteral returns a string literal value of the token.
+// TokenLiteral returns a token literal value of the token.
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 
-// String returns a string literal value of the token.
+// String returns a string representation of the IntegerLiteral type.
 func (il *IntegerLiteral) String() string { return il.Token.Literal }
 
 func (il *IntegerLiteral) expressionNode() {}
@@ -160,10 +160,10 @@ type PrefixExpression struct {
 	Right    Expression
 }
 
-// TokenLiteral returns a string literal value of the token.
+// TokenLiteral returns a token literal value of the token.
 func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Literal }
 
-// String returns a string literal value of the token.
+// String returns a string representation of the PrefixExpression type.
 func (pe *PrefixExpression) String() string {
 	var out bytes.Buffer
 
@@ -176,3 +176,29 @@ func (pe *PrefixExpression) String() string {
 }
 
 func (pe *PrefixExpression) expressionNode() {}
+
+// InfixExpression represents an expression such as (4 * 19).
+type InfixExpression struct {
+	Token    token.Token // Refers to Operator token such as (*, +, >)
+	Left     Expression
+	Operator string
+	Right    Expression
+}
+
+// TokenLiteral returns a token literal value of the token.
+func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Literal }
+
+// String returns a string representation of the InfixExpression type.
+func (ie *InfixExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(ie.Left.String())
+	out.WriteString(" " + ie.Operator + " ")
+	out.WriteString(ie.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
+func (ie *InfixExpression) expressionNode() {}
