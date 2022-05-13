@@ -5,13 +5,13 @@ const (
 	ILLEGAL = "ILLEGAL"
 
 	// EOF represents end of file.
-	EOF     = "EOF"
+	EOF = "EOF"
 
 	// IDENT such as add, foobar, x,y, ....etc
 	IDENT = "IDENT"
 
 	// INT such as 1234567890
-	INT   = "INT"
+	INT = "INT"
 
 	// ASSIGN ... are some of the operators implemented in the language.
 	ASSIGN   = "="
